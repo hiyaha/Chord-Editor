@@ -870,7 +870,7 @@ function renderFunctionLegend(show) {
   if (!show) { legend.innerHTML = ''; return; }
   const labels = { T: 'トニック', SD: 'サブドミナント', D: 'ドミナント' };
   legend.innerHTML =
-    `<span class="fn-circle-demo"></span><span class="fn-name">ダイアトニック</span>` +
+    ``+
     Object.entries(FN_CONFIG).map(([fn, cfg]) =>
       `<span class="fn-badge" style="border-color:${cfg.border};color:${cfg.border}">${fn}</span>` +
       `<span class="fn-name">${labels[fn]}</span>`

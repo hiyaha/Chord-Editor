@@ -529,6 +529,7 @@ button:hover:not(:disabled) { opacity: 0.82; }
   transition: transform 0.1s;
 }
 .matrix-cell:hover { transform: scale(1.15); z-index: 1; position: relative; }
+@media (pointer: coarse) { .matrix-cell:hover { transform: none; } }
 
 /* Tonal function legend */
 #fn-legend { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 5px; font-size: 0.73rem; }
