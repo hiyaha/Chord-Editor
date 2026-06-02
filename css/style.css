@@ -642,7 +642,6 @@ button:hover:not(:disabled) { opacity: 0.82; }
 .mobile-word { display: none; }
 .mobile-only { display: none !important; }
 .tb-mobile   { display: none; }
-.toolbar-playbar { display: none; }
 
 /* ── Active chord display (above piano) ── */
 #active-chord-display-wrap {
@@ -744,20 +743,20 @@ button:hover:not(:disabled) { opacity: 0.82; }
     order: 3;
   }
   /* 再生バーを最下段・全幅に */
-  .toolbar-playbar {
+  .toolbar-loop-group {
+    order: 8;
+  }
+  .toolbar-play-group {
     order: 9;
     width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding-top: 4px;
     border-top: 1px solid var(--border);
+    padding-top: 4px;
   }
-  .toolbar-playbar .playbar-btn {
+  .playbar-btn {
     flex: 1;
     height: 40px;
     font-size: 1.2rem;
-    padding: 0;
+    padding: 0 14px;
   }
   /* モバイル専用ボタンを表示 */
   .mobile-only { display: inline-flex !important; align-items: center; }
