@@ -793,9 +793,23 @@ function renderMatrix(progression) {
       cell.addEventListener('mousedown', e => { e.preventDefault(); showActiveChord(formatChord(root, type, state.selectedBass)); startChordPreview(); });
       cell.addEventListener('mouseup',    confirmChord);
       cell.addEventListener('mouseleave', cancelChord);
-      cell.addEventListener('touchstart',  e => { e.preventDefault(); showActiveChord(formatChord(root, type, state.selectedBass)); startChordPreview(); }, { passive: false });
-      cell.addEventListener('touchend',    e => { e.preventDefault(); confirmChord(); }, { passive: false });
-      cell.addEventListener('touchcancel', cancelChord);
+      {
+        let txStart = 0, tyStart = 0, tScrolling = false;
+        cell.addEventListener('touchstart', e => {
+          txStart = e.touches[0].clientX;
+          tyStart = e.touches[0].clientY;
+          tScrolling = false;
+          showActiveChord(formatChord(root, type, state.selectedBass));
+          startChordPreview();
+        }, { passive: true });
+        cell.addEventListener('touchmove', e => {
+          const dx = Math.abs(e.touches[0].clientX - txStart);
+          const dy = Math.abs(e.touches[0].clientY - tyStart);
+          if (!tScrolling && dx > 8 && dx > dy) { tScrolling = true; cancelChord(); }
+        }, { passive: true });
+        cell.addEventListener('touchend', () => { if (!tScrolling) confirmChord(); else cancelChord(); });
+        cell.addEventListener('touchcancel', cancelChord);
+      }
       rowEl.appendChild(cell);
     }
     body.appendChild(rowEl);

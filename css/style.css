@@ -680,8 +680,8 @@ button:hover:not(:disabled) { opacity: 0.82; }
   .bar-num-spacer { width: 30px; }
   .bar-del-btn    { width: 22px; }
   .bar-ctrl-spacer{ width: 22px; }
-  .chord-display  { font-size: 0.80rem; padding-right: 0; }
-  .roman-numeral  { font-size: 0.55rem; }
+  .chord-display  { font-size: 0.80rem; padding-right: 0; flex-direction: column; align-items: flex-start; gap: 1px; white-space: normal; }
+  .roman-numeral  { font-size: 0.60rem; }
 
   /* ── ツールバー: 2段レイアウト ── */
   #toolbar { gap: 6px; padding: 6px 10px; }
