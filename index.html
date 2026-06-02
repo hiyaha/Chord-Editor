@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chord-Editor</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- ── Main toolbar ── -->
+  <header id="toolbar">
+    <span class="app-title">Chord-Editor</span>
+
+    <div class="toolbar-group">
+      <label>拍子
+        <select id="timeSig">
+          <option value="4">4/4</option>
+          <option value="3">3/4</option>
+        </select>
+      </label>
+      <label>BPM
+        <input type="number" id="bpm" value="120" min="40" max="240">
+      </label>
+      <label>音量
+        <input type="range" id="volume" min="0" max="100" value="15" style="width:80px">
+      </label>
+      <label>音色
+        <select id="timbre">
+          <option value="sine">サイン波</option>
+          <option value="triangle">三角波</option>
+          <option value="sawtooth" selected>ノコギリ波</option>
+          <option value="square">矩形波</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="toolbar-group">
+      <button id="loopBtn"  class="btn-secondary">🔁 ループ: OFF</button>
+    </div>
+
+    <div class="toolbar-group">
+      <button id="rewindBtn" class="btn-secondary">⏮</button>
+      <button id="playBtn"   class="btn-primary">▶</button>
+      <button id="stopBtn"   class="btn-secondary">■</button>
+    </div>
+
+    <div class="toolbar-group">
+      <button id="addBarBtn" class="btn-secondary">＋ 小節</button>
+    </div>
+
+    <div class="toolbar-group toolbar-group-right">
+      <button id="overwriteBtn" class="btn-secondary" disabled>💾 上書き</button>
+      <button id="saveAsBtn"    class="btn-secondary">💾 別名保存</button>
+      <button id="shareBtn"     class="btn-secondary">🔗 共有</button>
+      <button id="manualBtn"    class="btn-secondary">📖 マニュアル</button>
+    </div>
+  </header>
+
+  <!-- ── Project list ── -->
+  <div id="project-bar">
+    <span class="project-bar-label">編集中：</span>
+    <span id="current-project-name" class="current-project-name">新規プロジェクト</span>
+    <span id="dirty-indicator" class="dirty-indicator" style="display:none">●</span>
+    <button id="newProjectBtn" class="btn-secondary btn-xs">＋ 新規</button>
+    <span class="project-bar-sep">｜</span>
+    <div id="project-list"></div>
+  </div>
+
+  <!-- ── Context toolbar (shown when bars selected) ── -->
+  <div id="context-toolbar" class="hidden">
+    <span id="ctx-label"></span>
+    <button id="ctx-copy"      class="btn-secondary">コピー</button>
+    <button id="ctx-paste"     class="btn-secondary">貼り付け</button>
+    <span class="ctx-sep">転調（選択）：</span>
+    <button id="ctx-t-up"      class="btn-secondary">＋1半音</button>
+    <button id="ctx-t-down"    class="btn-secondary">－1半音</button>
+    <span class="ctx-sep">転調（全体）：</span>
+    <button id="ctx-t-all-up"  class="btn-secondary">＋1半音</button>
+    <button id="ctx-t-all-down" class="btn-secondary">－1半音</button>
+    <button id="ctx-deselect"  class="btn-secondary">選択解除</button>
+  </div>
+
+  <!-- ── Main layout ── -->
+  <div id="layout">
+    <div id="grid-wrapper">
+      <div id="beat-header"></div>
+      <div id="grid"></div>
+    </div>
+
+    <div id="resize-handle"></div>
+
+    <!-- ── Chord panel ── -->
+    <aside id="chord-panel" class="hidden">
+      <div id="panel-header">
+        <span id="panel-title">コード選択</span>
+        <button id="close-panel">✕</button>
+      </div>
+
+      <div id="key-selector">
+        <label>キー
+          <select id="keyRoot">
+            <option value="">—</option>
+            <option>C</option><option>C#</option><option>D</option>
+            <option>D#</option><option>E</option><option>F</option>
+            <option>F#</option><option>G</option><option>G#</option>
+            <option>A</option><option>A#</option><option>B</option>
+          </select>
+          <select id="keyMode">
+            <option value="major">長調</option>
+            <option value="minor">短調</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="piano-wrap">
+        <div id="piano"></div>
+        <div id="piano-note-label">—</div>
+      </div>
+
+      <div class="cell-actions">
+        <button id="rest-btn"  class="action-btn rest-btn">∅ 休符（無音）</button>
+        <button id="clear-btn" class="action-btn clear-btn">— クリア（前のコードが続く）</button>
+      </div>
+
+      <section class="panel-section">
+<div id="matrix-wrap">
+          <div id="matrix-header"></div>
+          <div id="matrix-body"></div>
+        </div>
+      </section>
+
+      <section class="panel-section" id="bass-section">
+        <h4>オンコード <span class="section-hint">（/ベース音）</span></h4>
+        <div id="bass-list"></div>
+        <button id="clear-bass" class="btn-small">ベース音クリア</button>
+      </section>
+
+      <section class="panel-section" id="theory-section" style="display:none">
+<p id="theory-text"></p>
+      </section>
+    </aside>
+  </div>
+
+  <!-- ── Manual modal ── -->
+  <div id="manual-overlay" class="manual-overlay hidden">
+    <div id="manual-modal" class="manual-modal">
+      <button id="manual-close" class="manual-close">✕</button>
+      <h2>📖 操作マニュアル</h2>
+      <div class="manual-grid">
+
+        <div class="manual-item">
+          <h3>🎵 キー・調の設定</h3>
+          <p>パネル上部の「キー」セレクターでキーと調を設定します。コードボタンの色が濃いほど、理論的に自然なコードです。</p>
+        </div>
+
+        <div class="manual-item">
+          <h3>🎹 コードの入力</h3>
+          <p>譜面をクリックするとパネルが開きます。コードボタンをクリックしている間プレビュー音が鳴ります。</p>
+        </div>
+
+        <div class="manual-item">
+          <h3>🎹 単音プレビュー</h3>
+          <p>パネルの鍵盤を押している間、その音が鳴ります。</p>
+        </div>
+
+        <div class="manual-item">
+          <h3>🎸 オンコード（分数コード）</h3>
+          <p>コード確定後、「オンコード」欄でベース音を選択すると <code>C/E</code> のような分数コードになります。</p>
+        </div>
+
+        <div class="manual-item">
+          <h3>▶ 再生・ループ</h3>
+          <p>上部の ▶ で頭から再生。各小節左端の番号をクリックするとその小節から再生します。<code>S</code>/<code>E</code> ボタンでループ範囲を設定できます。</p>
+        </div>
+
+        <div class="manual-item">
+          <h3>📋 小節の選択・コピペ・転調</h3>
+          <p>各小節左端の ● をクリックして小節を選択できます（複数可）。選択範囲の転調（半音単位）、コピー＆貼り付けができます。</p>
+        </div>
+
+        <div class="manual-item">
+          <h3>💾 プロジェクト管理</h3>
+          <p>未保存の変更がある場合、プロジェクト名の横に <span style="color:#f59e0b;font-weight:700">●</span> が表示されます。🔗 共有ボタンで現在の状態をURLとしてコピーできます。</p>
+        </div>
+
+        <div class="manual-item manual-item-full">
+          <h3>⌨️ ショートカット</h3>
+          <div class="shortcut-row">
+            <span><kbd>Ctrl+Z</kbd> 取り消し</span>
+            <span><kbd>Ctrl+S</kbd> 上書き保存</span>
+            <span><kbd>Ctrl+C</kbd> コピー</span>
+            <span><kbd>Ctrl+V</kbd> 貼り付け</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="js/theory.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
