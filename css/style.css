@@ -517,7 +517,6 @@ button:hover:not(:disabled) { opacity: 0.82; }
   }
   #matrix-scrollbar-thumb:active { background: var(--accent); cursor: grabbing; }
   #active-chord-display { font-size: 1.3rem; }
-  .chord-confirm-hint { display: inline; }
 }
 #matrix-header, .matrix-row { display: flex; gap: 2px; margin-bottom: 2px; }
 .matrix-corner   { width: 28px; flex-shrink: 0; }
@@ -761,6 +760,7 @@ button:hover:not(:disabled) { opacity: 0.82; }
   }
   /* モバイル専用ボタンを表示 */
   .mobile-only { display: inline-flex !important; align-items: center; }
+  .chord-confirm-hint { display: inline; }
 
   /* パネルの閉じるボタンを押しやすく */
   #close-panel {
