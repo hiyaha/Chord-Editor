@@ -802,6 +802,62 @@ function renderMatrix(progression) {
   }
 
   renderFunctionLegend(!!state.keyRoot);
+  if (window.innerWidth <= 768) requestAnimationFrame(setupMatrixScrollbar);
+}
+
+function setupMatrixScrollbar() {
+  const wrap  = document.getElementById('matrix-wrap');
+  if (!wrap) return;
+
+  let track = document.getElementById('matrix-scrollbar-track');
+  if (!track) {
+    track = document.createElement('div');
+    track.id = 'matrix-scrollbar-track';
+    const thumb = document.createElement('div');
+    thumb.id = 'matrix-scrollbar-thumb';
+    track.appendChild(thumb);
+    wrap.after(track);
+  }
+  const thumb = document.getElementById('matrix-scrollbar-thumb');
+
+  const update = () => {
+    const ratio = wrap.clientWidth / wrap.scrollWidth;
+    if (ratio >= 1) { track.style.display = 'none'; return; }
+    track.style.display = '';
+    const trackW = track.clientWidth;
+    const tW = Math.max(40, Math.round(ratio * trackW));
+    const tX = Math.round((wrap.scrollLeft / (wrap.scrollWidth - wrap.clientWidth)) * (trackW - tW));
+    thumb.style.width = tW + 'px';
+    thumb.style.transform = `translateX(${tX}px)`;
+  };
+
+  wrap.removeEventListener('scroll', update);
+  wrap.addEventListener('scroll', update);
+  update();
+
+  // Drag logic (touch + mouse)
+  let dragging = false, startX = 0, startScroll = 0;
+  const onStart = x => {
+    dragging = true;
+    startX = x;
+    startScroll = wrap.scrollLeft;
+  };
+  const onMove = x => {
+    if (!dragging) return;
+    const trackW = track.clientWidth;
+    const ratio  = wrap.clientWidth / wrap.scrollWidth;
+    const tW     = Math.max(40, Math.round(ratio * trackW));
+    const scale  = (wrap.scrollWidth - wrap.clientWidth) / (trackW - tW);
+    wrap.scrollLeft = startScroll + (x - startX) * scale;
+  };
+  const onEnd = () => { dragging = false; };
+
+  thumb.onmousedown  = e => { e.preventDefault(); onStart(e.clientX); };
+  document.addEventListener('mousemove', e => onMove(e.clientX));
+  document.addEventListener('mouseup',   onEnd);
+  thumb.ontouchstart = e => { e.preventDefault(); onStart(e.touches[0].clientX); };
+  thumb.ontouchmove  = e => { e.preventDefault(); onMove(e.touches[0].clientX); };
+  thumb.ontouchend   = onEnd;
 }
 
 function renderFunctionLegend(show) {
