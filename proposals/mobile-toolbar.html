@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>モバイルツールバー案</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #111827; --bg2: #1f2937; --bg3: #374151;
+      --border: #4b5563; --text: #f9fafb; --text-muted: #9ca3af;
+      --accent: #06b6d4;
+    }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: var(--text); padding: 16px; display: flex; flex-direction: column; gap: 32px; }
+    h1 { font-size: 0.9rem; color: var(--text-muted); text-align: center; margin-bottom: -16px; }
+    .case { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .case-label { font-size: 0.75rem; color: var(--accent); font-weight: 700; padding: 8px 12px 6px; border-bottom: 1px solid var(--border); }
+    .case-desc  { font-size: 0.72rem; color: var(--text-muted); padding: 6px 12px 8px; border-bottom: 1px solid var(--border); line-height: 1.5; }
+    .toolbar { background: var(--bg2); padding: 8px 10px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    button { cursor: pointer; border: none; border-radius: 2px; font-weight: 600; transition: opacity 0.15s; white-space: nowrap; background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+    .btn-sm  { height: 28px; padding: 0 10px; font-size: 0.78rem; }
+    .btn-lg  { height: 48px; padding: 0 18px; font-size: 1.3rem; }
+    .btn-xl  { height: 56px; padding: 0 20px; font-size: 1.5rem; }
+    .btn-play { background: rgba(6,182,212,0.15); border-color: var(--accent); color: var(--accent); }
+    .spacer { flex: 1; }
+    .row { display: flex; align-items: center; gap: 6px; width: 100%; }
+    .row-top { border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 2px; }
+
+    /* ── 案A: 再生系を右端にまとめて大きく ── */
+    .a-wrap { display: flex; align-items: center; gap: 6px; width: 100%; flex-wrap: wrap; }
+
+    /* ── 案B: 再生系を独立した行に ── */
+
+    /* ── 案C: 再生系を中央に固定・超大きく ── */
+    .c-center { display: flex; justify-content: center; gap: 10px; width: 100%; padding: 4px 0; }
+  </style>
+</head>
+<body>
+
+<h1>スマホ版ツールバー レイアウト案（幅 375px 想定）</h1>
+
+<!-- ── 案 A ── -->
+<div class="case">
+  <div class="case-label">案 A ── 再生系を右端にまとめて大きく</div>
+  <div class="case-desc">設定系は左上にコンパクトに。再生3ボタンを右端に大きく並べる。1行に収まる。</div>
+  <div class="toolbar">
+    <button class="btn-sm">4/4</button>
+    <button class="btn-sm">BPM 120</button>
+    <button class="btn-sm">🔁</button>
+    <button class="btn-sm">小節＋</button>
+    <div class="spacer"></div>
+    <button class="btn-lg btn-play">⏮</button>
+    <button class="btn-lg btn-play">▶</button>
+    <button class="btn-lg btn-play">■</button>
+  </div>
+</div>
+
+<!-- ── 案 B ── -->
+<div class="case">
+  <div class="case-label">案 B ── 再生系を独立した2行目に</div>
+  <div class="case-desc">1行目に設定系・保存系。2行目全体を再生専用エリアにして最大化。</div>
+  <div class="toolbar" style="flex-direction: column; gap: 6px;">
+    <div class="row row-top">
+      <button class="btn-sm">4/4</button>
+      <button class="btn-sm">BPM 120</button>
+      <button class="btn-sm">小節＋</button>
+      <div class="spacer"></div>
+      <button class="btn-sm">↩</button>
+      <button class="btn-sm">💾</button>
+    </div>
+    <div class="row" style="justify-content: center; gap: 16px;">
+      <button class="btn-xl btn-play" style="flex:1">⏮</button>
+      <button class="btn-xl btn-play" style="flex:2; font-size:1.8rem">▶</button>
+      <button class="btn-xl btn-play" style="flex:1">■</button>
+      <button class="btn-sm" style="flex:1">🔁</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 案 C ── -->
+<div class="case">
+  <div class="case-label">案 C ── 再生ボタンだけ極大・画面中央固定</div>
+  <div class="case-desc">設定系は上下に小さく。再生3ボタンを中央に超大きく配置。▶ だけさらに大きい。</div>
+  <div class="toolbar" style="flex-direction: column; gap: 4px;">
+    <div class="row">
+      <button class="btn-sm">4/4</button>
+      <button class="btn-sm">BPM 120</button>
+      <button class="btn-sm">音量</button>
+      <button class="btn-sm">音色</button>
+      <div class="spacer"></div>
+      <button class="btn-sm">小節＋</button>
+    </div>
+    <div class="c-center">
+      <button class="btn-xl btn-play" style="width:64px">⏮</button>
+      <button class="btn-play" style="width:88px; height:64px; font-size:2rem; border-radius:2px; border:1px solid var(--accent); background:rgba(6,182,212,0.2); color:var(--accent)">▶</button>
+      <button class="btn-xl btn-play" style="width:64px">■</button>
+    </div>
+    <div class="row" style="justify-content: flex-end;">
+      <button class="btn-sm">🔁 ループOFF</button>
+      <button class="btn-sm">↩</button>
+      <button class="btn-sm">💾</button>
+      <button class="btn-sm">🔗</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 案 D ── -->
+<div class="case">
+  <div class="case-label">案 D ── フローティング再生バー（画面下部固定）</div>
+  <div class="case-desc">ツールバーは設定のみ。再生3ボタンは画面最下部に常時固定表示。譜面を広く使える。</div>
+  <div class="toolbar">
+    <button class="btn-sm">4/4</button>
+    <button class="btn-sm">BPM 120</button>
+    <button class="btn-sm">音量</button>
+    <button class="btn-sm">音色</button>
+    <button class="btn-sm">🔁</button>
+    <div class="spacer"></div>
+    <button class="btn-sm">小節＋</button>
+    <button class="btn-sm">💾</button>
+  </div>
+  <div style="background:#0d1117; padding: 6px 10px; font-size:0.68rem; color:var(--text-muted); text-align:center;">
+    ↑ ツールバー（設定のみ）
+  </div>
+  <div style="background:var(--bg3); border-top: 2px solid var(--accent); padding: 10px 16px; display:flex; gap:12px; justify-content:center; align-items:center;">
+    <button class="btn-lg btn-play" style="flex:1">⏮</button>
+    <button class="btn-play" style="flex:2; height:52px; font-size:1.6rem; border-radius:2px; border:1px solid var(--accent); background:rgba(6,182,212,0.2); color:var(--accent)">▶</button>
+    <button class="btn-lg btn-play" style="flex:1">■</button>
+  </div>
+  <div style="background:#0d1117; padding: 6px 10px; font-size:0.68rem; color:var(--text-muted); text-align:center;">
+    ↑ 画面最下部に常時固定
+  </div>
+</div>
+
+</body>
+</html>

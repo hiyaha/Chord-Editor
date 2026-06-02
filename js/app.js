@@ -794,7 +794,15 @@ function renderMatrix(progression) {
       cell.addEventListener('mouseup',    confirmChord);
       cell.addEventListener('mouseleave', cancelChord);
       cell.addEventListener('touchstart',  e => { e.preventDefault(); showActiveChord(formatChord(root, type, state.selectedBass)); startChordPreview(); }, { passive: false });
-      cell.addEventListener('touchend',    e => { e.preventDefault(); confirmChord(); }, { passive: false });
+      { let _lastTap = 0;
+        cell.addEventListener('touchend', e => {
+          e.preventDefault();
+          confirmChord();
+          const now = Date.now();
+          if (now - _lastTap < 350) closePanel();
+          _lastTap = now;
+        }, { passive: false });
+      }
       cell.addEventListener('touchcancel', cancelChord);
       rowEl.appendChild(cell);
     }

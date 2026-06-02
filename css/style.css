@@ -516,7 +516,8 @@ button:hover:not(:disabled) { opacity: 0.82; }
     touch-action: none;
   }
   #matrix-scrollbar-thumb:active { background: var(--accent); cursor: grabbing; }
-  #active-chord-display { min-height: 1.4rem; font-size: 1.3rem; }
+  #active-chord-display { font-size: 1.3rem; }
+  .chord-confirm-hint { display: inline; }
 }
 #matrix-header, .matrix-row { display: flex; gap: 2px; margin-bottom: 2px; }
 .matrix-corner   { width: 28px; flex-shrink: 0; }
@@ -642,18 +643,27 @@ button:hover:not(:disabled) { opacity: 0.82; }
 .mobile-word { display: none; }
 .mobile-only { display: none !important; }
 .tb-mobile   { display: none; }
+.toolbar-playbar { display: none; }
 
 /* ── Active chord display (above piano) ── */
-#active-chord-display {
+#active-chord-display-wrap {
   display: flex;
+  align-items: center;
+  gap: 10px;
   min-height: 2rem;
-  text-align: center;
+}
+#active-chord-display {
   font-size: 1.6rem;
   font-weight: 900;
   color: var(--accent);
   letter-spacing: 0.04em;
-  align-items: center;
-  justify-content: center;
+  white-space: nowrap;
+}
+.chord-confirm-hint {
+  display: none;
+  font-size: 0.70rem;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 /* ── Touch device ── */
@@ -732,7 +742,22 @@ button:hover:not(:disabled) { opacity: 0.82; }
   .toolbar-group-right {
     margin-left: 0;
     width: 100%;
-    order: 10;
+    order: 3;
+  }
+  /* 再生バーを最下段・全幅に */
+  .toolbar-playbar {
+    order: 9;
+    width: 100%;
+    display: flex;
+    gap: 6px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+  }
+  .toolbar-playbar .playbar-btn {
+    flex: 1;
+    height: 48px;
+    font-size: 1.3rem;
+    padding: 0;
   }
   /* モバイル専用ボタンを表示 */
   .mobile-only { display: inline-flex !important; align-items: center; }
