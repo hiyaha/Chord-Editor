@@ -412,13 +412,13 @@ function octavesForWidth(panelWidth) {
 
 let _pianoMinWidth = 356; // buildPiano 後に更新
 
-function buildPiano(octMin = 3, octMax = 4, kw = WW) {
+function buildPiano(octMin = 3, octMax = 4, kw = WW, whRatio = 70) {
   const keys = makePianoKeys(octMin, octMax);
   const wrap = document.getElementById('piano');
   wrap.innerHTML = '';
-  const WH = Math.round(kw * 70 / WW);
+  const WH = Math.round(kw * whRatio / WW);
   const BW = Math.max(8, Math.round(kw * 14 / WW));
-  const BH = Math.round(kw * 44 / WW);
+  const BH = Math.round(kw * whRatio * 0.63 / WW);
   const whiteKeys = keys.filter(k => k.type === 'white');
   const whitePos  = {};
   whiteKeys.forEach((k, i) => { whitePos[k.midi] = i * kw; });
@@ -460,7 +460,7 @@ function updatePianoForPanelWidth(panelWidth) {
     // Fill full panel width with 2 octaves (C3–B4) using larger keys
     const avail = panelWidth - PANEL_PAD - WRAP_PAD;
     const kw = Math.max(20, Math.floor(avail / 14));
-    buildPiano(3, 4, kw);
+    buildPiano(3, 4, kw, 46);
   } else {
     const [octMin, octMax] = octavesForWidth(panelWidth);
     buildPiano(octMin, octMax);
@@ -793,23 +793,9 @@ function renderMatrix(progression) {
       cell.addEventListener('mousedown', e => { e.preventDefault(); showActiveChord(formatChord(root, type, state.selectedBass)); startChordPreview(); });
       cell.addEventListener('mouseup',    confirmChord);
       cell.addEventListener('mouseleave', cancelChord);
-      {
-        let txStart = 0, tyStart = 0, tScrolling = false;
-        cell.addEventListener('touchstart', e => {
-          txStart = e.touches[0].clientX;
-          tyStart = e.touches[0].clientY;
-          tScrolling = false;
-          showActiveChord(formatChord(root, type, state.selectedBass));
-          startChordPreview();
-        }, { passive: true });
-        cell.addEventListener('touchmove', e => {
-          const dx = Math.abs(e.touches[0].clientX - txStart);
-          const dy = Math.abs(e.touches[0].clientY - tyStart);
-          if (!tScrolling && dx > 8 && dx > dy) { tScrolling = true; cancelChord(); }
-        }, { passive: true });
-        cell.addEventListener('touchend', () => { if (!tScrolling) confirmChord(); else cancelChord(); });
-        cell.addEventListener('touchcancel', cancelChord);
-      }
+      cell.addEventListener('touchstart',  e => { e.preventDefault(); showActiveChord(formatChord(root, type, state.selectedBass)); startChordPreview(); }, { passive: false });
+      cell.addEventListener('touchend',    e => { e.preventDefault(); confirmChord(); }, { passive: false });
+      cell.addEventListener('touchcancel', cancelChord);
       rowEl.appendChild(cell);
     }
     body.appendChild(rowEl);
