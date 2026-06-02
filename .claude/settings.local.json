@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:chordworker.acchord.jp)",
+      "WebSearch",
+      "Bash(Get-Content \"C:\\\\Users\\\\przes\\\\プロジェクト\\\\作曲支援\\\\js\\\\theory.js\")",
+      "Bash(Select-Object -First 20)"
+    ]
+  }
+}
