@@ -156,7 +156,7 @@ const AudioEngine = (() => {
   // acStartTime: 省略時は ac.currentTime + 0.05 で即座にスケジュール
   // onEnd(acEndTime): 実際の終了 LOOP_LEAD 秒前に発火し、次ループ開始時刻を渡す
   const LOOP_LEAD = 0.15; // 150ms 前倒しで onEnd を発火
-  function schedulePlayback(beats, bpm, onBeat, onEnd, acStartTime) {
+  function schedulePlayback(beats, bpm, onBeat, onEnd, acStartTime, startBeat = 0, beatsPerBar = 4) {
     stopScheduled();
     const ac = getCtx();
     if (ac.state === 'suspended') ac.resume();
@@ -177,7 +177,7 @@ const AudioEngine = (() => {
         const beatIdx = globalBeat + d;
         const delay = (beatTime - ac.currentTime) * 1000;
         timeouts.push(setTimeout(() => onBeat(beatIdx), delay));
-        if (clickEnabled) playClick(beatTime, beatIdx % 4 === 0, ac);
+        if (clickEnabled) playClick(beatTime, (startBeat + beatIdx) % beatsPerBar === 0, ac);
       }
       globalBeat += dur;
 

@@ -745,6 +745,7 @@ button:hover:not(:disabled) { opacity: 0.82; }
   /* 再生バーを最下段・全幅に */
   .toolbar-loop-group {
     order: 8;
+    width: 100%;
   }
   .toolbar-play-group {
     order: 9;

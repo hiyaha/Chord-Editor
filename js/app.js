@@ -959,14 +959,15 @@ function startPlayback(acStartTime) {
       state.stopPlayback = null;
       document.getElementById('playBtn').disabled = false;
       if (state.loop) {
-        // acEndTime を次ループの開始時刻として渡すことでラグゼロで繋ぐ
         startPlayback(acEndTime);
       } else {
         state.playheadIdx = null;
         renderGrid();
       }
     },
-    acStartTime
+    acStartTime,
+    startBeat,
+    state.beatsPerBar
   );
 }
 
@@ -1083,8 +1084,7 @@ function init() {
   document.getElementById('loopBtn').addEventListener('click', () => {
     state.loop = !state.loop;
     const btn = document.getElementById('loopBtn');
-    const label = btn.querySelector('.loop-label');
-    if (label) label.textContent = `ループ: ${state.loop ? 'ON' : 'OFF'}`;
+    btn.querySelectorAll('.loop-label').forEach(l => { l.textContent = `ループ: ${state.loop ? 'ON' : 'OFF'}`; });
     btn.classList.toggle('btn-primary',   state.loop);
     btn.classList.toggle('btn-secondary', !state.loop);
   });
@@ -1119,23 +1119,35 @@ function init() {
   });
 
   // Cell actions
-  document.getElementById('rest-btn').addEventListener('click', () => {
+  const restBtn  = document.getElementById('rest-btn');
+  const clearBtn = document.getElementById('clear-btn');
+  restBtn.addEventListener('click', () => {
     if (!state.selectedCell) return;
     const { barIdx, beatIdx } = state.selectedCell;
     saveHistory();
     state.bars[barIdx].beats[beatIdx].chord = 'rest';
     clearPianoHighlight();
+    clearActiveChord();
     renderGrid();
     document.getElementById('theory-section').style.display = 'none';
   });
-  document.getElementById('clear-btn').addEventListener('click', () => {
+  clearBtn.addEventListener('click', () => {
     if (!state.selectedCell) return;
     const { barIdx, beatIdx } = state.selectedCell;
     saveHistory();
     state.bars[barIdx].beats[beatIdx].chord = null;
     clearPianoHighlight();
+    clearActiveChord();
     renderGrid();
     document.getElementById('theory-section').style.display = 'none';
+  });
+  [restBtn, clearBtn].forEach(btn => {
+    let _lastTap = 0;
+    btn.addEventListener('touchend', e => {
+      const now = Date.now();
+      if (now - _lastTap < 350) closePanel();
+      _lastTap = now;
+    });
   });
   document.getElementById('clear-bass').addEventListener('click', () => {
     state.selectedBass = null;
