@@ -493,7 +493,10 @@ button:hover:not(:disabled) { opacity: 0.82; }
 .rec-btn:hover { background: var(--accent); }
 
 /* Matrix */
-#matrix-wrap { overflow-x: auto; overflow-y: visible; touch-action: pan-x; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+#matrix-wrap { overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+@media (max-width: 768px) {
+  #matrix-wrap { overflow-x: scroll; touch-action: pan-x; }
+}
 #matrix-header, .matrix-row { display: flex; gap: 2px; margin-bottom: 2px; }
 .matrix-corner   { width: 28px; flex-shrink: 0; }
 .matrix-col-head { width: 36px; flex-shrink: 0; text-align: center; font-size: 0.63rem; color: var(--text-muted); }
@@ -663,7 +666,7 @@ button:hover:not(:disabled) { opacity: 0.82; }
   .bar-row      { min-width: fit-content; }
 
   /* ── ビートセルをスリムに（375px 幅に4拍が収まるように）── */
-  .beat-cell        { width: 70px; min-height: 80px; }
+  .beat-cell        { width: 70px; min-width: 70px; min-height: 80px; }
   .beat-header-cell { width: 70px; }
   /* 左端の各種スペーサー・ボタンも縮小 */
   .bar-outer-spacer{ width: 22px; }
