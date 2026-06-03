@@ -377,6 +377,35 @@ function scoreNextChords(progression) {
       result[`${r4}_maj9`] = Math.max(result[`${r4}_maj9`], 0.60);
     }
 
+    // sus4 resolution: same root → M / m / 7 / maj7（4度→3度へ解決）
+    if (last.type === 'sus4') {
+      result[`${last.root}_maj`]  = Math.max(result[`${last.root}_maj`],  0.96);
+      result[`${last.root}_m`]    = Math.max(result[`${last.root}_m`],    0.82);
+      result[`${last.root}_7`]    = Math.max(result[`${last.root}_7`],    0.78);
+      result[`${last.root}_maj7`] = Math.max(result[`${last.root}_maj7`], 0.68);
+      result[`${last.root}_add9`] = Math.max(result[`${last.root}_add9`], 0.62);
+    }
+
+    // aug resolution:
+    // ① 同ルート → M（Xaug → X、増5度が5度に落ち着く）
+    // ② 増5度音をルートとする和音（I aug → IV型のクロマティック上行）
+    // ③ 半音上のルートへの解決（Vaug → I型）
+    if (last.type === 'aug') {
+      // ① 同ルートのMへ
+      result[`${last.root}_maj`]  = Math.max(result[`${last.root}_maj`],  0.80);
+      result[`${last.root}_7`]    = Math.max(result[`${last.root}_7`],    0.70);
+      // ② 増5度上（+8半音）のルートへ（I→Iaug→IV の IV）
+      const rAug5 = NOTES[(li + 8) % 12];
+      result[`${rAug5}_maj`]  = Math.max(result[`${rAug5}_maj`],  0.88);
+      result[`${rAug5}_maj7`] = Math.max(result[`${rAug5}_maj7`], 0.78);
+      result[`${rAug5}_m`]    = Math.max(result[`${rAug5}_m`],    0.72);
+      // ③ 完全4度上（+5半音）への解決（Vaug → I型）
+      const rUp4 = NOTES[(li + 5) % 12];
+      result[`${rUp4}_maj`]  = Math.max(result[`${rUp4}_maj`],  0.85);
+      result[`${rUp4}_m`]    = Math.max(result[`${rUp4}_m`],    0.75);
+      result[`${rUp4}_maj7`] = Math.max(result[`${rUp4}_maj7`], 0.68);
+    }
+
     // Neapolitan resolution: N → V(7) strongly
     const keys2 = detectKeys(valid);
     for (const key of keys2) {
@@ -440,6 +469,20 @@ function getExplanation(fromChord, toChord) {
   const ti2 = noteIndex(toChord.root);
   const interval = (ti2 - fi + 12) % 12;
   const INAMES = ['同音','短2度','長2度','短3度','長3度','完全4度','tritone','完全5度','短6度','長6度','短7度','長7度'];
+
+  // ── sus4 解決 ──
+  if (fromChord.type === 'sus4' && fromChord.root === toChord.root)
+    return `${fc}→${tc}：sus4からの解決。浮遊感のある4度が3度に落ち着く、ポップ・ロックで定番の安心感のある動きです。`;
+  if (fromChord.type === 'sus4' && interval === 0)
+    return `${fc}→${tc}：sus4の変形解決。同ルートで質が変わります。`;
+
+  // ── aug 解決 ──
+  if (fromChord.type === 'aug' && interval === 0)
+    return `${fc}→${tc}：augから同ルートへの解決。増5度が5度に下がり、緊張が解放されます。`;
+  if (fromChord.type === 'aug' && interval === 8)
+    return `${fc}→${tc}：I→Iaug→IV 型のクロマティック上行。増5度の音がルートになって滑らかにつながります。`;
+  if (fromChord.type === 'aug' && interval === 5)
+    return `${fc}→${tc}：Vaug→I 型の解決。オーギュメントドミナントからトニックへの強い着地感です。`;
 
   // ── ドミナントモーション ──
   if ((fromChord.type === '7' || fromChord.type === '9') && interval === 5)
