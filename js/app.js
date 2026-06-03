@@ -473,10 +473,10 @@ function buildPiano(octMin = 3, octMax = 4, kw = WW, whRatio = 70) {
 function updatePianoForPanelWidth(panelWidth) {
   const isMobile = window.innerWidth <= 768;
   if (isMobile) {
-    // Fill full panel width with 2 octaves (C3–B4) using larger keys
+    // Fill full panel width with 2 octaves (C4–B5) using larger keys
     const avail = panelWidth - PANEL_PAD - WRAP_PAD;
     const kw = Math.max(20, Math.floor(avail / 14));
-    buildPiano(3, 4, kw, 46);
+    buildPiano(4, 5, kw, 46);
   } else {
     const [octMin, octMax] = octavesForWidth(panelWidth);
     buildPiano(octMin, octMax);
