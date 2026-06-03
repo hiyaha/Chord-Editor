@@ -379,6 +379,22 @@ function lastChordBefore(barIdx, beatIdx) {
   return null;
 }
 
+// Returns up to N distinct chords before position (barIdx, beatIdx), newest-last
+function progressionBefore(barIdx, beatIdx, n = 4) {
+  const gi = barIdx * state.beatsPerBar + beatIdx;
+  const beats = allBeats();
+  const result = [];
+  let lastKey = null;
+  for (let i = gi - 1; i >= 0 && result.length < n; i--) {
+    const c = beats[i].chord;
+    if (c && c !== 'rest') {
+      const k = `${c.root}_${c.type}`;
+      if (k !== lastKey) { result.unshift(c); lastKey = k; }
+    }
+  }
+  return result;
+}
+
 // ── Piano keyboard ─────────────────────────────────────────────────────────
 const KEY_LAYOUT = [
   { note: 'C',  type: 'white' }, { note: 'C#', type: 'black' },
@@ -726,7 +742,7 @@ function renderPanel() {
   const theoryText    = document.getElementById('theory-text');
   if (beat.chord && beat.chord !== 'rest') {
     const prevChord = lastChordBefore(barIdx, beatIdx);
-    theoryText.textContent = getExplanation(prevChord, beat.chord);
+    theoryText.textContent = getExplanation(prevChord, beat.chord, progressionBefore(barIdx, beatIdx));
     theorySection.style.display = 'block';
   } else {
     theorySection.style.display = 'none';
@@ -911,7 +927,7 @@ function selectChord(root, type) {
   saveHistory();
   beat.chord = { root, type, bass: state.selectedBass };
 
-  document.getElementById('theory-text').textContent = getExplanation(prevChord, { root, type });
+  document.getElementById('theory-text').textContent = getExplanation(prevChord, { root, type }, progressionBefore(barIdx, beatIdx));
   document.getElementById('theory-section').style.display = 'block';
   highlightPianoKeys(getChordMidis(root, type, state.selectedBass));
   renderGrid();

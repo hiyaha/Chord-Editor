@@ -301,14 +301,14 @@ function scoreNextChords(progression) {
       result[`${root}_m`]    = 0.55;
       result[`${root}_maj7`] = 0.50;
       result[`${root}_m7`]   = 0.45;
-      result[`${root}_add9`] = 0.45;  // very common pop/rock opener
+      result[`${root}_add9`] = 0.45;
       result[`${root}_6`]    = 0.38;
       result[`${root}_sus4`] = 0.35;
-      result[`${root}_maj9`] = 0.32;  // jazz/R&B tonic
+      result[`${root}_maj9`] = 0.32;
       result[`${root}_m9`]   = 0.28;
       result[`${root}_m6`]   = 0.22;
       result[`${root}_7`]    = 0.22;
-      result[`${root}_9`]    = 0.18;  // dom9 opener uncommon
+      result[`${root}_9`]    = 0.18;
       result[`${root}_dim`]  = 0.08;
       result[`${root}_aug`]  = 0.08;
     }
@@ -323,30 +323,23 @@ function scoreNextChords(progression) {
     const secMap  = getSecondaryDominantMap(key.root, key.mode);
     const borrow  = getBorrowedSet(key.root, key.mode);
 
-    // Diatonic chords (tension chords score slightly lower — they're elaborations)
     const TENSION_TYPES = new Set(['add9', '6', 'm6', '9', 'm9', 'maj9']);
     for (const [s, type] of diatonic) {
       const k = `${NOTES[(ti + s) % 12]}_${type}`;
       const w = TENSION_TYPES.has(type) ? 0.58 : 0.70;
       result[k] = Math.max(result[k], key.score * w);
     }
-
-    // Secondary dominants (moderate boost)
-    for (const secDom of Object.keys(secMap)) {
+    for (const secDom of Object.keys(secMap))
       result[secDom] = Math.max(result[secDom], key.score * 0.45);
-    }
-
-    // Borrowed chords (mild boost)
-    for (const b of borrow) {
+    for (const b of borrow)
       result[b] = Math.max(result[b], key.score * 0.30);
-    }
 
-    // Neapolitan chord (♭IIM): subdominant substitute, leads to V
+    // Neapolitan (♭IIM)
     const napRoot = NOTES[(ti + 1) % 12];
     result[`${napRoot}_maj`]  = Math.max(result[`${napRoot}_maj`],  key.score * 0.28);
     result[`${napRoot}_maj7`] = Math.max(result[`${napRoot}_maj7`], key.score * 0.22);
 
-    // Picardy third (I major in minor): tonic area ending
+    // Picardy third
     if (key.mode === 'minor') {
       const picRoot = NOTES[ti];
       result[`${picRoot}_maj`]  = Math.max(result[`${picRoot}_maj`],  key.score * 0.35);
@@ -354,12 +347,16 @@ function scoreNextChords(progression) {
     }
   }
 
-  // ── Voice leading from last chord ──
+  // ── Voice leading: last chord ──────────────────────────────────────────────
   const last = valid[valid.length - 1];
+  const prev = valid[valid.length - 2];   // 2つ前
+  const prev2 = valid[valid.length - 3];  // 3つ前
+  const keys2 = detectKeys(valid);
+
   if (last) {
     const li = noteIndex(last.root);
 
-    // Dominant 7th / dom9 resolution (V7→I, V9→I): strongest possible pull
+    // ── Dominant 7th / dom9 resolution (V7→I) ──
     if (last.type === '7' || last.type === '9') {
       const r = NOTES[(li + 5) % 12];
       result[`${r}_maj`]  = Math.max(result[`${r}_maj`],  1.00);
@@ -369,15 +366,55 @@ function scoreNextChords(progression) {
       result[`${r}_m7`]   = Math.max(result[`${r}_m7`],   0.80);
       result[`${r}_add9`] = Math.max(result[`${r}_add9`], 0.78);
       result[`${r}_6`]    = Math.max(result[`${r}_6`],    0.72);
+
+      // 偽終止 (Deceptive cadence): V7 → VIm
+      const rDec = NOTES[(li + 9) % 12];
+      result[`${rDec}_m`]  = Math.max(result[`${rDec}_m`],  0.75);
+      result[`${rDec}_m7`] = Math.max(result[`${rDec}_m7`], 0.68);
+
+      // トライトーン代理 (Tritone substitution): ♭II7 → I（半音下への解決）
+      const rTri = NOTES[(li + 11) % 12];
+      result[`${rTri}_maj`]  = Math.max(result[`${rTri}_maj`],  0.80);
+      result[`${rTri}_m`]    = Math.max(result[`${rTri}_m`],    0.73);
+      result[`${rTri}_maj7`] = Math.max(result[`${rTri}_maj7`], 0.76);
+      result[`${rTri}_m7`]   = Math.max(result[`${rTri}_m7`],   0.70);
+
+      // バックドアドミナント (♭VII7→I): 全音上への解決
+      const rBD = NOTES[(li + 2) % 12];
+      result[`${rBD}_maj`]  = Math.max(result[`${rBD}_maj`],  0.72);
+      result[`${rBD}_m`]    = Math.max(result[`${rBD}_m`],    0.66);
+      result[`${rBD}_maj7`] = Math.max(result[`${rBD}_maj7`], 0.68);
     }
-    // m7/m9 leading to IV or ♭VII (common jazz/pop moves)
+
+    // ── dim / dim7: 代理ドミナント（V7♭9のルートなし）＋4way symmetry ──
+    if (last.type === 'dim' || last.type === 'dim7') {
+      // dim7 = 短3度ごとに4つのルートが対称 → 各+1半音が解決先
+      const steps = last.type === 'dim7' ? [1, 4, 7, 10] : [1];
+      for (const step of steps) {
+        const rRes = NOTES[(li + step) % 12];
+        const str  = step === 1 ? 0.92 : 0.65;
+        result[`${rRes}_maj`]  = Math.max(result[`${rRes}_maj`],  str);
+        result[`${rRes}_m`]    = Math.max(result[`${rRes}_m`],    str * 0.94);
+        result[`${rRes}_maj7`] = Math.max(result[`${rRes}_maj7`], str * 0.88);
+        result[`${rRes}_m7`]   = Math.max(result[`${rRes}_m7`],   str * 0.84);
+      }
+    }
+
+    // ── m7b5 (ハーフディミニッシュ): m7♭5 → dom7 a 4th above (IIø→V7) ──
+    if (last.type === 'm7b5') {
+      const rV = NOTES[(li + 5) % 12];
+      result[`${rV}_7`] = Math.max(result[`${rV}_7`], 0.88);
+      result[`${rV}_9`] = Math.max(result[`${rV}_9`], 0.82);
+    }
+
+    // ── m7 / m9 → IV方向 ──
     if (last.type === 'm7' || last.type === 'm9') {
-      const r4 = NOTES[(li + 5) % 12];   // up a 4th
+      const r4 = NOTES[(li + 5) % 12];
       result[`${r4}_maj7`] = Math.max(result[`${r4}_maj7`], 0.65);
       result[`${r4}_maj9`] = Math.max(result[`${r4}_maj9`], 0.60);
     }
 
-    // sus4 resolution: same root → M / m / 7 / maj7（4度→3度へ解決）
+    // ── sus4 → 同ルート解決 ──
     if (last.type === 'sus4') {
       result[`${last.root}_maj`]  = Math.max(result[`${last.root}_maj`],  0.96);
       result[`${last.root}_m`]    = Math.max(result[`${last.root}_m`],    0.82);
@@ -386,34 +423,51 @@ function scoreNextChords(progression) {
       result[`${last.root}_add9`] = Math.max(result[`${last.root}_add9`], 0.62);
     }
 
-    // aug resolution:
-    // ① 同ルート → M（Xaug → X、増5度が5度に落ち着く）
-    // ② 増5度音をルートとする和音（I aug → IV型のクロマティック上行）
-    // ③ 半音上のルートへの解決（Vaug → I型）
+    // ── aug 解決 ──
     if (last.type === 'aug') {
-      // ① 同ルートのMへ
       result[`${last.root}_maj`]  = Math.max(result[`${last.root}_maj`],  0.80);
       result[`${last.root}_7`]    = Math.max(result[`${last.root}_7`],    0.70);
-      // ② 増5度上（+8半音）のルートへ（I→Iaug→IV の IV）
       const rAug5 = NOTES[(li + 8) % 12];
       result[`${rAug5}_maj`]  = Math.max(result[`${rAug5}_maj`],  0.88);
       result[`${rAug5}_maj7`] = Math.max(result[`${rAug5}_maj7`], 0.78);
       result[`${rAug5}_m`]    = Math.max(result[`${rAug5}_m`],    0.72);
-      // ③ 完全4度上（+5半音）への解決（Vaug → I型）
       const rUp4 = NOTES[(li + 5) % 12];
       result[`${rUp4}_maj`]  = Math.max(result[`${rUp4}_maj`],  0.85);
       result[`${rUp4}_m`]    = Math.max(result[`${rUp4}_m`],    0.75);
       result[`${rUp4}_maj7`] = Math.max(result[`${rUp4}_maj7`], 0.68);
     }
 
-    // Neapolitan resolution: N → V(7) strongly
-    const keys2 = detectKeys(valid);
+    // ── mMaj7 降下声部進行 (mMaj7→m7→m) ──
+    if (last.type === 'mMaj7') {
+      result[`${last.root}_m7`] = Math.max(result[`${last.root}_m7`], 0.94);
+      result[`${last.root}_m9`] = Math.max(result[`${last.root}_m9`], 0.84);
+      result[`${last.root}_m6`] = Math.max(result[`${last.root}_m6`], 0.75);
+      result[`${last.root}_m`]  = Math.max(result[`${last.root}_m`],  0.68);
+    }
+
+    // ── クロマティックメディアント (major同士・短/長3度) ──
+    if (['maj','maj7','add9','6'].includes(last.type)) {
+      for (const step of [3, 4, 8, 9]) {
+        const rCM = NOTES[(li + step) % 12];
+        const str = (step === 3 || step === 4) ? 0.58 : 0.52;
+        result[`${rCM}_maj`]  = Math.max(result[`${rCM}_maj`],  str);
+        result[`${rCM}_maj7`] = Math.max(result[`${rCM}_maj7`], str * 0.92);
+      }
+    }
+
+    // ── ♭VIMaj7 → V (ロマンティック進行) ──
     for (const key of keys2) {
-      const ki = noteIndex(key.root);
+      const ki  = noteIndex(key.root);
       const li2 = noteIndex(last.root);
-      const interval = (li2 - ki + 12) % 12;
-      if (interval === 1 && (last.type === 'maj' || last.type === 'maj7')) {
-        // N resolves to V or V7
+      const ivl = (li2 - ki + 12) % 12;
+      if (ivl === 8 && ['maj','maj7'].includes(last.type)) {
+        const vRoot = NOTES[(ki + 7) % 12];
+        result[`${vRoot}_7`]   = Math.max(result[`${vRoot}_7`],   key.score * 0.86);
+        result[`${vRoot}_maj`] = Math.max(result[`${vRoot}_maj`], key.score * 0.78);
+        result[`${vRoot}_9`]   = Math.max(result[`${vRoot}_9`],   key.score * 0.82);
+      }
+      // Neapolitan → V
+      if (ivl === 1 && ['maj','maj7'].includes(last.type)) {
         const vRoot = NOTES[(ki + 7) % 12];
         result[`${vRoot}_maj`] = Math.max(result[`${vRoot}_maj`], key.score * 0.90);
         result[`${vRoot}_7`]   = Math.max(result[`${vRoot}_7`],   key.score * 0.88);
@@ -421,21 +475,153 @@ function scoreNextChords(progression) {
       }
     }
 
-    // Secondary dominant resolution: if last chord IS a secondary dominant
+    // ── Secondary dominant resolution ──
     for (const key of keys2) {
       const secMap = getSecondaryDominantMap(key.root, key.mode);
       const target = secMap[`${last.root}_${last.type}`];
-      if (target) {
-        result[target] = Math.max(result[target], key.score * 0.95);
+      if (target) result[target] = Math.max(result[target], key.score * 0.95);
+    }
+
+    // ── 5度圏連鎖 (Cycle of Fifths chain) ──
+    if (prev) {
+      const pi = noteIndex(prev.root);
+      const stepPL = (li - pi + 12) % 12;
+      if (stepPL === 5) {
+        // 4度ずつ上がるサイクル継続
+        const rNext = NOTES[(li + 5) % 12];
+        for (const t of ['maj','m','7','m7','maj7'])
+          result[`${rNext}_${t}`] = Math.max(result[`${rNext}_${t}`], 0.68);
+      }
+      if (stepPL === 7) {
+        // 5度ずつ上がるサイクル継続
+        const rNext = NOTES[(li + 7) % 12];
+        for (const t of ['maj','m','7','m7'])
+          result[`${rNext}_${t}`] = Math.max(result[`${rNext}_${t}`], 0.60);
       }
     }
 
-    // Common interval movements
+    // ── 汎用インターバル進行 ──
     for (const [sem, bonus] of [[5,0.55],[7,0.45],[9,0.40],[3,0.35],[10,0.30]]) {
       const r = NOTES[(li + sem) % 12];
-      for (const t of ['maj','m','7','m7','maj7']) {
+      for (const t of ['maj','m','7','m7','maj7'])
         result[`${r}_${t}`] = Math.max(result[`${r}_${t}`], bonus * 0.55);
-      }
+    }
+  }
+
+  // ── 2コード参照: II-V-I, パッシングdim, 偽終止後, mMaj7降下 ─────────────
+  if (prev && last) {
+    const pi = noteIndex(prev.root);
+    const li = noteIndex(last.root);
+
+    // II-V-I: IIm7 → V7 → I（ジャズの根幹）
+    if ((prev.type === 'm7' || prev.type === 'm9') &&
+        (last.type === '7'  || last.type === '9') &&
+        (li - pi + 12) % 12 === 7) {
+      const rI = NOTES[(li + 5) % 12];
+      result[`${rI}_maj`]  = Math.max(result[`${rI}_maj`],  1.00);
+      result[`${rI}_maj7`] = Math.max(result[`${rI}_maj7`], 0.96);
+      result[`${rI}_maj9`] = Math.max(result[`${rI}_maj9`], 0.92);
+      result[`${rI}_m`]    = Math.max(result[`${rI}_m`],    0.86);
+      result[`${rI}_m7`]   = Math.max(result[`${rI}_m7`],   0.82);
+      result[`${rI}_add9`] = Math.max(result[`${rI}_add9`], 0.88);
+      result[`${rI}_6`]    = Math.max(result[`${rI}_6`],    0.80);
+    }
+
+    // パッシングdim: X → Xdim（+1半音）→ 次もう1半音上（IIm等）
+    if ((last.type === 'dim' || last.type === 'dim7') && (li - pi + 12) % 12 === 1) {
+      const rNext = NOTES[(li + 1) % 12];
+      result[`${rNext}_m`]   = Math.max(result[`${rNext}_m`],   0.93);
+      result[`${rNext}_m7`]  = Math.max(result[`${rNext}_m7`],  0.88);
+      result[`${rNext}_maj`] = Math.max(result[`${rNext}_maj`], 0.72);
+    }
+
+    // 偽終止後 (V7→VIm → IV が来やすい)
+    if ((prev.type === '7' || prev.type === '9') &&
+        (last.type === 'm' || last.type === 'm7') &&
+        (li - pi + 12) % 12 === 9) {
+      const rOrigTonic = NOTES[(pi + 5) % 12];
+      const rIV = NOTES[(noteIndex(rOrigTonic) + 5) % 12];
+      result[`${rIV}_maj`]  = Math.max(result[`${rIV}_maj`],  0.85);
+      result[`${rIV}_maj7`] = Math.max(result[`${rIV}_maj7`], 0.78);
+      result[`${rIV}_add9`] = Math.max(result[`${rIV}_add9`], 0.80);
+    }
+
+    // mMaj7 → m7 → m / m6（ハーモニックマイナー降下継続）
+    if (prev.type === 'mMaj7' && last.type === 'm7' && prev.root === last.root) {
+      result[`${last.root}_m`]  = Math.max(result[`${last.root}_m`],  0.92);
+      result[`${last.root}_m6`] = Math.max(result[`${last.root}_m6`], 0.86);
+      const rV = NOTES[(li + 7) % 12];
+      result[`${rV}_7`] = Math.max(result[`${rV}_7`], 0.74);
+    }
+
+    // ♭VII → ♭VI（アンダルシア/フリジアン降下途中）
+    if ((pi - li + 12) % 12 === 2 &&
+        ['maj','maj7'].includes(prev.type) && ['maj','maj7'].includes(last.type)) {
+      // 続けてさらに半音/全音下 → V方向
+      const rV = NOTES[(li + 11) % 12];
+      result[`${rV}_maj`] = Math.max(result[`${rV}_maj`], 0.82);
+      result[`${rV}_7`]   = Math.max(result[`${rV}_7`],   0.78);
+    }
+  }
+
+  // ── 3コード参照: 頻出パターン認識 ────────────────────────────────────────
+  if (prev2 && prev && last && keys2.length > 0) {
+    const key = keys2[0];
+    const ki = noteIndex(key.root);
+    const d2 = (noteIndex(prev2.root) - ki + 12) % 12;
+    const d1 = (noteIndex(prev.root)  - ki + 12) % 12;
+    const d0 = (noteIndex(last.root)  - ki + 12) % 12;
+
+    // I-V-vi → IV（最多頻出ポップ進行）
+    if (d2 === 0 && d1 === 7 && d0 === 9 && ['m','m7'].includes(last.type)) {
+      const rIV = NOTES[(ki + 5) % 12];
+      result[`${rIV}_maj`]  = Math.max(result[`${rIV}_maj`],  key.score * 0.94);
+      result[`${rIV}_maj7`] = Math.max(result[`${rIV}_maj7`], key.score * 0.88);
+      result[`${rIV}_add9`] = Math.max(result[`${rIV}_add9`], key.score * 0.86);
+    }
+
+    // vi-IV-I → V
+    if (d2 === 9 && d1 === 5 && d0 === 0) {
+      const rV = NOTES[(ki + 7) % 12];
+      result[`${rV}_7`]   = Math.max(result[`${rV}_7`],   key.score * 0.94);
+      result[`${rV}_maj`] = Math.max(result[`${rV}_maj`], key.score * 0.82);
+      result[`${rV}_9`]   = Math.max(result[`${rV}_9`],   key.score * 0.90);
+      result[`${rV}_sus4`]= Math.max(result[`${rV}_sus4`], key.score * 0.72);
+    }
+
+    // I-IV-V → I（ブルース/ロック定番）
+    if (d2 === 0 && d1 === 5 && d0 === 7) {
+      const rI = NOTES[ki];
+      result[`${rI}_maj`]  = Math.max(result[`${rI}_maj`],  key.score * 0.92);
+      result[`${rI}_7`]    = Math.max(result[`${rI}_7`],    key.score * 0.74);
+      result[`${rI}_add9`] = Math.max(result[`${rI}_add9`], key.score * 0.84);
+    }
+
+    // ♭VII-♭VI-V → i（アンダルシア終止 / フリジアン降下）
+    if (d2 === 10 && d1 === 8 && d0 === 7) {
+      const rI = NOTES[ki];
+      result[`${rI}_m`]    = Math.max(result[`${rI}_m`],    key.score * 0.94);
+      result[`${rI}_m7`]   = Math.max(result[`${rI}_m7`],   key.score * 0.86);
+      result[`${rI}_maj`]  = Math.max(result[`${rI}_maj`],  key.score * 0.72); // Picardy
+    }
+
+    // ii-V-I → ii（繰り返し）or 次のii（転調）
+    const li_last = noteIndex(last.root);
+    if (d1 === 2 && d0 === 7 &&
+        ['m7','m9'].includes(prev.type) && ['7','9'].includes(last.type)) {
+      const rNextI = NOTES[(li_last + 5) % 12];
+      // 解決後に再びiiが来る（ジャズ的反復）
+      const rNextII = NOTES[(noteIndex(rNextI) + 2) % 12];
+      result[`${rNextII}_m7`] = Math.max(result[`${rNextII}_m7`], key.score * 0.72);
+      result[`${rNextII}_m9`] = Math.max(result[`${rNextII}_m9`], key.score * 0.65);
+    }
+
+    // I-vi-IV → V（50年代コード）
+    if (d2 === 0 && d1 === 9 && d0 === 5) {
+      const rV = NOTES[(ki + 7) % 12];
+      result[`${rV}_7`]    = Math.max(result[`${rV}_7`],    key.score * 0.92);
+      result[`${rV}_maj`]  = Math.max(result[`${rV}_maj`],  key.score * 0.80);
+      result[`${rV}_sus4`] = Math.max(result[`${rV}_sus4`], key.score * 0.70);
     }
   }
 
@@ -459,16 +645,87 @@ function getRecommended(progression, n = 7) {
 }
 
 // ── Theory explanation ─────────────────────────────────────────────────────
-function getExplanation(fromChord, toChord) {
+function getExplanation(fromChord, toChord, progression) {
   if (!fromChord || fromChord === 'rest')
     return `${formatChord(toChord.root, toChord.type)} からスタート。冒頭のコード選びが曲全体の色を決めます。`;
 
   const fc = formatChord(fromChord.root, fromChord.type);
   const tc = formatChord(toChord.root, toChord.type);
   const fi = noteIndex(fromChord.root);
-  const ti2 = noteIndex(toChord.root);
-  const interval = (ti2 - fi + 12) % 12;
-  const INAMES = ['同音','短2度','長2度','短3度','長3度','完全4度','tritone','完全5度','短6度','長6度','短7度','長7度'];
+  const ti = noteIndex(toChord.root);
+  const interval = (ti - fi + 12) % 12;
+  const INAMES = ['同音','半音','長2度','短3度','長3度','完全4度','tritone','完全5度','短6度','長6度','短7度','長7度'];
+
+  // ── 複数コード文脈（lookback）──
+  const valid = progression ? progression.filter(c => c && c !== 'rest') : [];
+  const prev = valid.length >= 2 ? valid[valid.length - 2] : null;   // fromChord の一つ前
+  const prev2 = valid.length >= 3 ? valid[valid.length - 3] : null;  // さらに一つ前
+
+  if (prev) {
+    const pi = noteIndex(prev.root);
+    const stepPL = (fi - pi + 12) % 12;  // prev→fromChord
+    const stepLT = interval;              // fromChord→toChord
+
+    // II-V-I（IIm7 → V7 → I）
+    if ((prev.type === 'm7' || prev.type === 'm9') &&
+        (fromChord.type === '7' || fromChord.type === '9') &&
+        stepPL === 7 && (stepLT === 5 || stepLT === 0)) {
+      return `${formatChord(prev.root, prev.type)}→${fc}→${tc}：II-V-I 進行！ジャズの王道。IIm7でテンションを溜め、V7で頂点を作り、Iに解決します。`;
+    }
+
+    // サイクル・オブ・フィフスの連鎖
+    if (stepPL === 5 && stepLT === 5) {
+      return `${formatChord(prev.root, prev.type)}→${fc}→${tc}：5度下行（サイクル・オブ・フィフス）の連鎖。ジャズでおなじみの流れるような進行です。`;
+    }
+
+    // パッシングディミニッシュ（IとIIの間に挟まるdim）
+    if ((fromChord.type === 'dim' || fromChord.type === 'dim7') &&
+        (stepPL === 1 || stepPL === 11) && (stepLT === 1 || stepLT === 11)) {
+      return `${formatChord(prev.root, prev.type)}→${fc}→${tc}：パッシングディミニッシュ。半音クロマティックの動きにdimを挟み、滑らかな声部進行を生みます。`;
+    }
+
+    // ディセプティブ・カデンス後のIV→I（欺き解決の後処理）
+    if ((prev.type === '7' || prev.type === '9') &&
+        (fromChord.type === 'm' || fromChord.type === 'm7') &&
+        (pi + 5) % 12 === fi % 12) {
+      const rI = NOTES[(fi + 3) % 12];
+      if (toChord.root === rI) {
+        return `${formatChord(prev.root, prev.type)}→${fc}→${tc}：偽終止（ディセプティブ・カデンス）後の収束。V7がVImに「裏切り」解決した後、短調的なルートへ向かいます。`;
+      }
+    }
+
+    // mMaj7→m7→m（下降ライン）
+    if (prev.type === 'mMaj7' && fromChord.type === 'm7' && prev.root === fromChord.root &&
+        toChord.root === fromChord.root) {
+      return `${formatChord(prev.root, prev.type)}→${fc}→${tc}：マイナーメジャー7→m7への降下ライン。長7度→短7度と内声が半音下がる映画的ボイスリーディング。`;
+    }
+
+    // アンダルシアン（♭VII-♭VI-V-i）
+    if (prev2) {
+      const p2i = noteIndex(prev2.root);
+      const d2 = (pi - p2i + 12) % 12;
+      const d1 = (fi - pi + 12) % 12;
+      const d0 = (ti - fi + 12) % 12;
+      if (d2 === 10 && d1 === 10 && d0 === 7 &&
+          (toChord.type === 'm' || toChord.type === 'm7')) {
+        return `${formatChord(prev2.root, prev2.type)}→${formatChord(prev.root, prev.type)}→${fc}→${tc}：アンダルシアン終止！♭VII-♭VI-V-i の下行。フラメンコ・ロックの情熱的なカデンスです。`;
+      }
+      // I-V-vi-IV（4コード進行の IV 部分）
+      if (d2 === 0 && d1 === 7 && d0 === 9 &&
+          (fromChord.type === 'm' || fromChord.type === 'm7') &&
+          (toChord.type === 'maj' || toChord.type === 'maj7')) {
+        return `${formatChord(prev2.root, prev2.type)}→${formatChord(prev.root, prev.type)}→${fc}→${tc}：I-V-vi-IV の黄金コード進行！ポップ史上最も使われた4コードの締めくくりです。`;
+      }
+      // vi-IV-I-V（同じ4コード）
+      if (d2 === 9 && d1 === 3 && d0 === 7) {
+        return `${formatChord(prev2.root, prev2.type)}→${formatChord(prev.root, prev.type)}→${fc}→${tc}：vi-IV-I-V のポップ進行の一部。この4コードループはカノン進行とも呼ばれ、無数のヒット曲に使われています。`;
+      }
+      // I-vi-IV-V（50sコード → V）
+      if (d2 === 0 && d1 === 9 && d0 === 5 && interval === 7) {
+        return `${formatChord(prev2.root, prev2.type)}→${formatChord(prev.root, prev.type)}→${fc}→${tc}：I-vi-IV-V（50年代進行）。オールディーズ・ドゥーワップの定番。懐かしさと安定感を持つ4コードです。`;
+      }
+    }
+  }
 
   // ── sus4 解決 ──
   if (fromChord.type === 'sus4' && fromChord.root === toChord.root)
@@ -484,9 +741,45 @@ function getExplanation(fromChord, toChord) {
   if (fromChord.type === 'aug' && interval === 5)
     return `${fc}→${tc}：Vaug→I 型の解決。オーギュメントドミナントからトニックへの強い着地感です。`;
 
+  // ── mMaj7 下降ボイスリーディング ──
+  if (fromChord.type === 'mMaj7') {
+    if (interval === 0 && (toChord.type === 'm7' || toChord.type === 'm'))
+      return `${fc}→${tc}：mMaj7→m7 の半音下降。内声の長7度が短7度に落ちる映画的ボイスリーディング。ジェームズ・ボンドのテーマでも有名な動きです。`;
+    if (interval === 0 && toChord.type === 'm9')
+      return `${fc}→${tc}：mMaj7→m7(9) の下降ライン。テンションを加えながら内声が半音で動く洗練された進行です。`;
+  }
+
+  // ── dim7 プロキシドミナント ──
+  if (fromChord.type === 'dim7') {
+    if (interval === 1)
+      return `${fc}→${tc}：dim7プロキシドミナント解決（主解決）。dim7はその半音上のコードに自然に解決します。`;
+    if (interval === 4 || interval === 7 || interval === 10)
+      return `${fc}→${tc}：dim7の対称解決。dim7は短3度ごとに4つの等価な解決先を持ちます。`;
+  }
+  if (fromChord.type === 'dim' && interval === 1)
+    return `${fc}→${tc}：dimから半音上への解決。強いリーディングトーンが引力を生みます。`;
+
+  // ── m7♭5 → V7 ──
+  if (fromChord.type === 'm7b5' && (toChord.type === '7' || toChord.type === '9') && interval === 5)
+    return `${fc}→${tc}：m7♭5→V7 の進行。マイナーキーのII→V。ジャズのマイナーII-V-Iの核心です。`;
+
   // ── ドミナントモーション ──
   if ((fromChord.type === '7' || fromChord.type === '9') && interval === 5)
     return `${fc}→${tc}：V(9)→I のドミナントモーション。強い解決感と着地感。クラシック・ジャズ共通の基本進行です。`;
+
+  // ── 偽終止（ディセプティブ・カデンス）──
+  if ((fromChord.type === '7' || fromChord.type === '9') && interval === 2 &&
+      (toChord.type === 'm' || toChord.type === 'm7'))
+    return `${fc}→${tc}：偽終止（ディセプティブ・カデンス）！V7が期待されるIの代わりにVImへ解決。リスナーを驚かせる感情的な動きです。`;
+
+  // ── トライトーン代理（♭II7→I）──
+  if ((fromChord.type === '7' || fromChord.type === '9') && interval === 11)
+    return `${fc}→${tc}：トライトーン代理（♭II7→I）。本来のV7の代わりに三全音上のドミナント7が半音下行で解決。ジャズのスムーズな代理進行です。`;
+
+  // ── バックドアドミナント（♭VII7→I）──
+  if ((fromChord.type === '7' || fromChord.type === '9') && interval === 2 &&
+      (toChord.type === 'maj' || toChord.type === 'maj7'))
+    return `${fc}→${tc}：バックドアドミナント（♭VII7→I）。メジャーキーのIに2半音下から解決するジャズ的な裏口進行です。`;
 
   // ── セカンダリドミナント ──
   if ((fromChord.type === '7' || fromChord.type === '9') && interval !== 5)
@@ -496,6 +789,25 @@ function getExplanation(fromChord, toChord) {
   if (interval === 1 && (fromChord.type === 'maj' || fromChord.type === 'maj7'))
     return `${fc}→${tc}：ナポリの和音からの進行。♭II から V へ向かう古典的な強進行です。`;
 
+  // ── クロマティック・メディアント ──
+  if (interval === 3 && (fromChord.type === 'maj' || fromChord.type === 'maj7') &&
+      (toChord.type === 'maj' || toChord.type === 'maj7'))
+    return `${fc}→${tc}：クロマティック・メディアント（短3度上のメジャー）。共通音を持つ幻想的な色彩転換。映画音楽・ゲーム音楽で多用されます。`;
+  if (interval === 9 && (fromChord.type === 'maj' || fromChord.type === 'maj7') &&
+      (toChord.type === 'maj' || toChord.type === 'maj7'))
+    return `${fc}→${tc}：クロマティック・メディアント（長3度下のメジャー）。短3度上と同じ対称関係。壮大な転換感を生みます。`;
+  if (interval === 4 && (fromChord.type === 'maj' || fromChord.type === 'maj7') &&
+      (toChord.type === 'maj' || toChord.type === 'maj7'))
+    return `${fc}→${tc}：クロマティック・メディアント（長3度上のメジャー）。鮮やかな色彩変化。マーベル映画などの音楽でも頻出です。`;
+  if (interval === 8 && (fromChord.type === 'maj' || fromChord.type === 'maj7') &&
+      (toChord.type === 'maj' || toChord.type === 'maj7'))
+    return `${fc}→${tc}：クロマティック・メディアント（短3度下のメジャー）。モーダルな借用感がある幻想的な動きです。`;
+
+  // ── ♭VIMaj7 → V ──
+  if (interval === 8 && (fromChord.type === 'maj' || fromChord.type === 'maj7') &&
+      (toChord.type === '7' || toChord.type === '9'))
+    return `${fc}→${tc}：♭VIMaj7→V7。借用コードからドミナントへ向かう感傷的・劇的な進行です。`;
+
   // ── IV への進行 ──
   if (interval === 5 && (fromChord.type === 'maj' || fromChord.type === 'add9' || fromChord.type === '6'))
     return `${fc}→${tc}：I→IV（完全4度上）。サブドミナントへの開放的な動き。明るく広がる響きです。`;
@@ -504,15 +816,15 @@ function getExplanation(fromChord, toChord) {
   if (interval === 7)
     return `${fc}→${tc}：完全5度上（ドミナント方向）への進行。緊張感と推進力が生まれます。`;
 
-  // ── I→VIm（平行短調） ──
-  if (interval === 9 && toChord.type === 'm')
+  // ── I→VIm（平行短調）・ディミニッシュ前 ──
+  if (interval === 9 && (toChord.type === 'm' || toChord.type === 'm7'))
     return `${fc}→${tc}：平行短調（VI）へ。明るさを保ちながら感情的な深みが増します。`;
 
   // ── 短3度上への借用的動き ──
   if (interval === 3 && toChord.type === 'maj')
     return `${fc}→${tc}：短3度上のメジャーへ。モーダルな色彩変化。映画音楽でよく使われます。`;
 
-  // ── 長3度下（短6度上）— クロマティック的 ──
+  // ── ♭VI ──
   if (interval === 8 && toChord.type === 'maj')
     return `${fc}→${tc}：♭VI へ。長調の中の借用コード。感傷的・映画的な雰囲気を生みます。`;
 
@@ -524,7 +836,7 @@ function getExplanation(fromChord, toChord) {
   if (interval === 0)
     return `${fc}→${tc}：同ルートで質が変わる進行。明暗や緊張感の転換を一瞬で演出できます。`;
 
-  // ── 短2度（半音）──
+  // ── 長2度 ──
   if (interval === 2)
     return `${fc}→${tc}：長2度上への進行。ジャズのII→V感覚や転調前の準備としてよく現れます。`;
 
