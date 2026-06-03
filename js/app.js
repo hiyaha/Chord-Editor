@@ -730,8 +730,7 @@ function closePanel() {
 
 function renderPanel() {
   const { barIdx, beatIdx } = state.selectedCell;
-  const gi = barIdx * state.beatsPerBar + beatIdx;
-  const progression = progressionBefore(gi);
+  const progression = progressionBefore(barIdx, beatIdx);
 
   document.getElementById('panel-title').textContent = `小節 ${barIdx + 1} — 拍 ${beatIdx + 1}`;
   clearPianoHighlight();
