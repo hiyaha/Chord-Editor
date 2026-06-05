@@ -1112,11 +1112,11 @@ function init() {
 
   // Octave buttons
   document.getElementById('oct-up').addEventListener('click', () => {
-    state.selectedOctave = state.selectedOctave === 1 ? 0 : 1;
+    state.selectedOctave = state.selectedOctave === 0 ? 1 : 0;
     updateOctaveButtons();
   });
   document.getElementById('oct-down').addEventListener('click', () => {
-    state.selectedOctave = state.selectedOctave === -1 ? 0 : -1;
+    state.selectedOctave = state.selectedOctave === 0 ? -1 : 0;
     updateOctaveButtons();
   });
 
