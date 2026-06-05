@@ -75,14 +75,14 @@ const AudioEngine = (() => {
     previewOscs = [osc];
   }
 
-  function startPreview(root, type, bass) {
+  function startPreview(root, type, bass, octaveOffset = 0) {
     stopPreview();
     if (!root || !type) return;
 
     const ac = getCtx();
     if (ac.state === 'suspended') ac.resume();
 
-    const freqs = getChordFreqs(root, type, bass);
+    const freqs = getChordFreqs(root, type, bass, octaveOffset);
     const now = ac.currentTime;
     previewStartTime = now;
 
@@ -182,7 +182,7 @@ const AudioEngine = (() => {
       globalBeat += dur;
 
       if (chord && chord !== 'rest') {
-        const freqs = getChordFreqs(chord.root, chord.type, chord.bass);
+        const freqs = getChordFreqs(chord.root, chord.type, chord.bass, chord.octaveOffset ?? 0);
         playFreqs(freqs, startTime, beatDur * dur - 0.01, ac);
       }
 

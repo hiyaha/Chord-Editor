@@ -12,6 +12,7 @@ const state = {
   playbackStart: 0,
   selectedCell: null,
   selectedBass: null,
+  selectedOctave: 0,
   keyRoot: 'C',
   keyMode: 'major',
   loop: false,
@@ -642,6 +643,8 @@ function renderGrid() {
       } else if (beat.chord) {
         chordDiv.textContent = formatChord(beat.chord.root, beat.chord.type, beat.chord.bass);
         chordDiv.classList.add('has-chord');
+        if (beat.chord.octaveOffset === 1)  { const ind = document.createElement('span'); ind.className = 'oct-indicator'; ind.textContent = '↑'; chordDiv.appendChild(ind); }
+        if (beat.chord.octaveOffset === -1) { const ind = document.createElement('span'); ind.className = 'oct-indicator'; ind.textContent = '↓'; chordDiv.appendChild(ind); }
       } else {
         chordDiv.textContent = '—';
         chordDiv.classList.add('empty');
@@ -712,11 +715,22 @@ function renderGrid() {
 function openPanel(barIdx, beatIdx) {
   state.selectedCell = { barIdx, beatIdx };
   state.selectedBass = null;
+  // オクターブ: 既存コードの値を引き継ぐ、空セルは 0
+  const beat = state.bars[barIdx].beats[beatIdx];
+  state.selectedOctave = (beat.chord && beat.chord !== 'rest') ? (beat.chord.octaveOffset ?? 0) : 0;
   clearActiveChord();
   renderGrid();
   document.getElementById('chord-panel').classList.remove('hidden');
   document.getElementById('resize-handle').classList.add('visible');
   renderPanel();
+}
+
+function updateOctaveButtons() {
+  const up   = document.getElementById('oct-up');
+  const down = document.getElementById('oct-down');
+  if (!up || !down) return;
+  up.classList.toggle('active', state.selectedOctave === 1);
+  down.classList.toggle('active', state.selectedOctave === -1);
 }
 
 function closePanel() {
@@ -749,6 +763,7 @@ function renderPanel() {
 
   renderMatrix(progression);
   renderBassSelector();
+  updateOctaveButtons();
 }
 
 const FN_CONFIG = {
@@ -800,8 +815,8 @@ function renderMatrix(progression) {
       }
 
       const startChordPreview = () => {
-        AudioEngine.startPreview(root, type, state.selectedBass);
-        highlightPianoKeys(getChordMidis(root, type, state.selectedBass));
+        AudioEngine.startPreview(root, type, state.selectedBass, state.selectedOctave);
+        highlightPianoKeys(getChordMidis(root, type, state.selectedBass, state.selectedOctave));
       };
       const confirmChord = () => { AudioEngine.stopPreview(); showActiveChord(formatChord(root, type, state.selectedBass)); selectChord(root, type); };
       const cancelChord  = () => { AudioEngine.stopPreview(); clearPianoHighlight(); };
@@ -924,11 +939,11 @@ function selectChord(root, type) {
   const prevChord = lastChordBefore(barIdx, beatIdx);
 
   saveHistory();
-  beat.chord = { root, type, bass: state.selectedBass };
+  beat.chord = { root, type, bass: state.selectedBass, octaveOffset: state.selectedOctave };
 
   document.getElementById('theory-text').textContent = getExplanation(prevChord, { root, type }, progressionBefore(barIdx, beatIdx));
   document.getElementById('theory-section').style.display = 'block';
-  highlightPianoKeys(getChordMidis(root, type, state.selectedBass));
+  highlightPianoKeys(getChordMidis(root, type, state.selectedBass, state.selectedOctave));
   renderGrid();
   renderBassSelector();
 }
@@ -1094,6 +1109,16 @@ function init() {
   document.getElementById('saveAsBtn').addEventListener('click', saveAsProject);
   document.getElementById('shareBtn').addEventListener('click', shareUrl);
   document.getElementById('close-panel').addEventListener('click', closePanel);
+
+  // Octave buttons
+  document.getElementById('oct-up').addEventListener('click', () => {
+    state.selectedOctave = state.selectedOctave === 1 ? 0 : 1;
+    updateOctaveButtons();
+  });
+  document.getElementById('oct-down').addEventListener('click', () => {
+    state.selectedOctave = state.selectedOctave === -1 ? 0 : -1;
+    updateOctaveButtons();
+  });
 
   // Loop
   document.getElementById('loopBtn').addEventListener('click', () => {

@@ -225,14 +225,14 @@ function _resolveIntervals(type, bass, root) {
   return intervals;
 }
 
-function getChordFreqs(root, type, bass) {
+function getChordFreqs(root, type, bass, octaveOffset = 0) {
   const rootIdx = noteIndex(root);
-  const rootMidi = 60 + rootIdx;
+  const rootMidi = 60 + rootIdx + octaveOffset * 12;
   const intervals = _resolveIntervals(type, bass, root);
   const freqs = intervals.map(iv => midiToHz(rootMidi + iv));
 
   if (bass && bass !== root) {
-    freqs.unshift(midiToHz(60 + noteIndex(bass) - 12));
+    freqs.unshift(midiToHz(60 + noteIndex(bass) - 12 + octaveOffset * 12));
   } else if (!ROOTLESS_TYPES.has(type) || (bass && bass === root)) {
     freqs.unshift(midiToHz(rootMidi - 12)); // bass octave
   }
@@ -240,14 +240,14 @@ function getChordFreqs(root, type, bass) {
 }
 
 // 実際に鳴るMIDI番号を返す（ハイライト用）
-function getChordMidis(root, type, bass) {
+function getChordMidis(root, type, bass, octaveOffset = 0) {
   const rootIdx = noteIndex(root);
-  const rootMidi = 60 + rootIdx;
+  const rootMidi = 60 + rootIdx + octaveOffset * 12;
   const intervals = _resolveIntervals(type, bass, root);
   const midis = intervals.map(iv => rootMidi + iv);
 
   if (bass && bass !== root) {
-    midis.unshift(60 + noteIndex(bass) - 12);
+    midis.unshift(60 + noteIndex(bass) - 12 + octaveOffset * 12);
   } else if (!ROOTLESS_TYPES.has(type) || (bass && bass === root)) {
     midis.unshift(rootMidi - 12); // bass octave
   }
