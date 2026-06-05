@@ -1111,14 +1111,23 @@ function init() {
   document.getElementById('close-panel').addEventListener('click', closePanel);
 
   // Octave buttons
-  document.getElementById('oct-up').addEventListener('click', () => {
-    state.selectedOctave = state.selectedOctave === 0 ? 1 : 0;
-    updateOctaveButtons();
-  });
-  document.getElementById('oct-down').addEventListener('click', () => {
-    state.selectedOctave = state.selectedOctave === 0 ? -1 : 0;
-    updateOctaveButtons();
-  });
+  function addOctBtnListener(id, delta) {
+    const btn = document.getElementById(id);
+    let _touched = false;
+    btn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      _touched = true;
+      state.selectedOctave = state.selectedOctave === 0 ? delta : 0;
+      updateOctaveButtons();
+    }, { passive: false });
+    btn.addEventListener('click', () => {
+      if (_touched) { _touched = false; return; } // touchstart が先に処理済み
+      state.selectedOctave = state.selectedOctave === 0 ? delta : 0;
+      updateOctaveButtons();
+    });
+  }
+  addOctBtnListener('oct-up',   1);
+  addOctBtnListener('oct-down', -1);
 
   // Loop
   document.getElementById('loopBtn').addEventListener('click', () => {
